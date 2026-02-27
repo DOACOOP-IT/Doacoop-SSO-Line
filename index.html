@@ -35,13 +35,20 @@
       color: #333;
       text-align: center;
       padding: 0 20px;
+      word-wrap: break-word;
+    }
+    .error-text {
+      color: #ff3b30;
+      font-size: 14px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <div class="loader"></div>
+  <div class="loader" id="loader"></div>
   <div class="message" id="status">กำลังเตรียมระบบ...</div>
+  <div class="error-text" id="error-msg"></div>
 
   <script>
     // ==========================================
@@ -50,7 +57,7 @@
     const LIFF_ID = "2009256913-60X6COKd"; 
     
     // ==========================================
-    // 2. URL Web App ของ Google Apps Script ที่ตั้งค่าไว้แล้ว
+    // 2. URL Web App ของ Google Apps Script
     // ==========================================
     const GAS_API_URL = "[https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec](https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec)";
 
@@ -61,25 +68,25 @@
     function initializeLiff() {
       document.getElementById('status').innerText = "กำลังเชื่อมต่อกับระบบ LINE...";
       
-      liff.init({ liffId: LIFF_ID })
+      // เพิ่ม withLoginOnExternalBrowser เพื่อจัดการ Login อัตโนมัติให้เสถียรขึ้น
+      liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true })
         .then(() => {
-          if (liff.isLoggedIn()) {
-            document.getElementById('status').innerText = "กำลังดึงข้อมูลโปรไฟล์...";
-            
-            liff.getProfile().then(profile => {
-              const lineId = profile.userId;
-              checkLineIdWithAPI(lineId); // ส่ง Line ID ไปตรวจสอบกับ Google Apps Script
-            }).catch(err => {
-              document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการดึงโปรไฟล์ LINE";
-              console.error(err);
-            });
-          } else {
-            // ถ้าไม่ได้ล็อกอิน ให้บังคับล็อกอิน
-            liff.login();
-          }
+          document.getElementById('status').innerText = "กำลังดึงข้อมูลโปรไฟล์...";
+          
+          liff.getProfile().then(profile => {
+            const lineId = profile.userId;
+            checkLineIdWithAPI(lineId); // ส่ง Line ID ไปตรวจสอบกับ Google Apps Script
+          }).catch(err => {
+            document.getElementById('status').innerText = "ไม่สามารถดึงข้อมูลโปรไฟล์ได้";
+            document.getElementById('error-msg').innerText = err.message;
+            document.getElementById('loader').style.display = 'none';
+          });
         })
         .catch((err) => {
-          document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการโหลด LIFF (ตรวจสอบ LIFF ID)";
+          // หาก liff.init พัง จะแสดง Error ตรงนี้แทนการค้าง
+          document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการโหลด LIFF";
+          document.getElementById('error-msg').innerText = "รายละเอียด: " + err.message + "\n(โปรดตรวจสอบ Endpoint URL ใน LINE Developers ว่าใส่เครื่องหมาย / ต่อท้ายหรือไม่)";
+          document.getElementById('loader').style.display = 'none';
           console.error(err);
         });
     }
@@ -88,12 +95,13 @@
     function checkLineIdWithAPI(lineId) {
       document.getElementById('status').innerText = "กำลังตรวจสอบฐานข้อมูล...";
       
-      // ส่งคำขอไปยัง Web App URL
       fetch(`${GAS_API_URL}?lineId=${lineId}`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
-             document.getElementById('status').innerText = "พบปัญหา: " + data.error;
+             document.getElementById('status').innerText = "พบปัญหาการเชื่อมต่อฐานข้อมูล";
+             document.getElementById('error-msg').innerText = data.error;
+             document.getElementById('loader').style.display = 'none';
              return;
           }
 
@@ -103,12 +111,12 @@
             document.getElementById('status').innerText = "ยังไม่ได้ลงทะเบียน กำลังพาท่านไปยังหน้าลงทะเบียน...";
           }
           
-          // เปลี่ยนหน้าเว็บไปยัง URL ปลายทาง
           window.location.href = data.redirectUrl;
         })
         .catch(error => {
           document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
-          console.error('Error fetching data:', error);
+          document.getElementById('error-msg').innerText = error.message;
+          document.getElementById('loader').style.display = 'none';
         });
     }
   </script>
