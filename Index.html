@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>กำลังตรวจสอบข้อมูล...</title>
+  <!-- นำเข้า LIFF SDK -->
+  <script src="[https://static.line-scdn.net/liff/edge/2/sdk.js](https://static.line-scdn.net/liff/edge/2/sdk.js)"></script>
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f5f6f8;
+      margin: 0;
+    }
+    .loader {
+      border: 5px solid #e0e0e0;
+      border-top: 5px solid #00c300;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .message {
+      font-size: 18px;
+      color: #333;
+      text-align: center;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="loader"></div>
+  <div class="message" id="status">กำลังเตรียมระบบ...</div>
+
+  <script>
+    // ==========================================
+    // 1. LIFF ID ของคุณ
+    // ==========================================
+    const LIFF_ID = "2009256913-60X6COKd"; 
+    
+    // ==========================================
+    // 2. URL Web App ของ Google Apps Script ที่ตั้งค่าไว้แล้ว
+    // ==========================================
+    const GAS_API_URL = "[https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec](https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec)";
+
+    window.onload = function() {
+      initializeLiff();
+    };
+
+    function initializeLiff() {
+      document.getElementById('status').innerText = "กำลังเชื่อมต่อกับระบบ LINE...";
+      
+      liff.init({ liffId: LIFF_ID })
+        .then(() => {
+          if (liff.isLoggedIn()) {
+            document.getElementById('status').innerText = "กำลังดึงข้อมูลโปรไฟล์...";
+            
+            liff.getProfile().then(profile => {
+              const lineId = profile.userId;
+              checkLineIdWithAPI(lineId); // ส่ง Line ID ไปตรวจสอบกับ Google Apps Script
+            }).catch(err => {
+              document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการดึงโปรไฟล์ LINE";
+              console.error(err);
+            });
+          } else {
+            // ถ้าไม่ได้ล็อกอิน ให้บังคับล็อกอิน
+            liff.login();
+          }
+        })
+        .catch((err) => {
+          document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการโหลด LIFF (ตรวจสอบ LIFF ID)";
+          console.error(err);
+        });
+    }
+
+    // ฟังก์ชันส่งข้อมูลไปให้ Google Apps Script ตรวจสอบผ่าน Fetch API
+    function checkLineIdWithAPI(lineId) {
+      document.getElementById('status').innerText = "กำลังตรวจสอบฐานข้อมูล...";
+      
+      // ส่งคำขอไปยัง Web App URL
+      fetch(`${GAS_API_URL}?lineId=${lineId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+             document.getElementById('status').innerText = "พบปัญหา: " + data.error;
+             return;
+          }
+
+          if (data.isRegistered) {
+            document.getElementById('status').innerText = "พบข้อมูลในระบบ กำลังพาท่านเข้าสู่ระบบ...";
+          } else {
+            document.getElementById('status').innerText = "ยังไม่ได้ลงทะเบียน กำลังพาท่านไปยังหน้าลงทะเบียน...";
+          }
+          
+          // เปลี่ยนหน้าเว็บไปยัง URL ปลายทาง
+          window.location.href = data.redirectUrl;
+        })
+        .catch(error => {
+          document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
+          console.error('Error fetching data:', error);
+        });
+    }
+  </script>
+</body>
+</html>
