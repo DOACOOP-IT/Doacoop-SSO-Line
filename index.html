@@ -39,11 +39,12 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
+    /* สไตล์สำหรับฟอร์ม (เริ่มต้นจะถูกซ่อนไว้) */
     #form-container { display: none; }
     h2 { color: #333; margin-top: 0; }
     .form-group { text-align: left; margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; font-weight: 600; }
-    input[type="text"] {
+    input[type="text"], input[type="tel"] {
       width: 100%;
       padding: 12px;
       border: 1px solid #ccc;
@@ -69,7 +70,6 @@
     }
     button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
     .error-text { color: #ff3b30; font-size: 14px; margin-top: 15px; }
-    .debug-text { color: #888; font-size: 12px; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -80,7 +80,6 @@
       <div class="loader" id="loader-spinner"></div>
       <div id="status-text" style="font-size: 18px; color: #333;">กำลังเตรียมระบบ...</div>
       <div id="error-msg" class="error-text"></div>
-      <div id="debug-msg" class="debug-text"></div>
     </div>
 
     <!-- ส่วนฟอร์มลงทะเบียน -->
@@ -89,11 +88,15 @@
       <form id="regForm">
         <div class="form-group">
           <label>ชื่อ</label>
-          <input type="text" id="firstName" placeholder="กรอกชื่อจริง" required>
+          <input type="text" id="firstName" placeholder="กรอกชื่อ" required>
         </div>
         <div class="form-group">
           <label>นามสกุล</label>
           <input type="text" id="lastName" placeholder="กรอกนามสกุล" required>
+        </div>
+        <div class="form-group">
+          <label>หมายเลขโทรศัพท์</label>
+          <input type="tel" id="phone" placeholder="เช่น 0812345678" pattern="[0-9]{9,10}" required>
         </div>
         <button type="submit" id="submitBtn">บันทึกข้อมูลและเข้าสู่ระบบ</button>
         <div id="form-error" class="error-text"></div>
@@ -105,12 +108,11 @@
     // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
     
-    // TODO: ใส่ URL Web App ของ Google Apps Script ที่เพิ่งได้ใหม่จากการ Deploy ทับลงไปตรงนี้
+    // นำ URL Web App ของ Google Apps Script อันใหม่มาวางที่นี่
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec";
     // ==========================================
 
-    // ตัวแปรเก็บข้อมูลโปรไฟล์ชั่วคราวจาก LIFF
-    let currentUserData = {};
+    let currentUserLineId = "";
 
     window.onload = function() {
       initializeLiff();
@@ -124,30 +126,19 @@
           liff.login();
           return;
         }
-        
         document.getElementById('status-text').innerText = "กำลังตรวจสอบสถานะสมาชิก...";
-        
         liff.getProfile().then(profile => {
-          // เก็บข้อมูลสำคัญเตรียมไว้ตอนบันทึกฟอร์ม
-          currentUserData = {
-            userID: profile.userId,
-            Displayname: profile.displayName || "",
-            pictureUrl: profile.pictureUrl || "",
-            language: liff.getLanguage() || "th"
-          };
-          
-          document.getElementById('debug-msg').innerText = "Line ID ของคุณ: " + currentUserData.userID;
-          checkLineIdWithAPI(currentUserData.userID); 
-          
+          currentUserLineId = profile.userId;
+          checkLineIdWithAPI(currentUserLineId); 
         }).catch(err => {
           showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message);
         });
-        
       }).catch(err => {
         showError("เกิดข้อผิดพลาดในการโหลด LIFF", err.message);
       });
     }
 
+    // ฟังก์ชันเช็คว่ามี Line ID ในระบบหรือยัง (GET)
     function checkLineIdWithAPI(lineId) {
       const fetchUrl = `${GAS_API_URL}?lineId=${lineId}&nocache=${new Date().getTime()}`;
       
@@ -160,10 +151,11 @@
           }
 
           if (data.isRegistered) {
+            // มีข้อมูลแล้ว พาไปหน้าระบบ
             document.getElementById('status-text').innerText = "พบข้อมูลในระบบ กำลังพาท่านเข้าสู่ระบบ...";
             window.location.replace(data.redirectUrl);
           } else {
-            // ยังไม่มีข้อมูล ซ่อนตัวโหลด แล้วแสดงฟอร์ม (ผู้ใช้กรอกแค่ ชื่อ และ นามสกุล)
+            // ยังไม่มีข้อมูล ซ่อนตัวโหลด แล้วแสดงฟอร์ม
             document.getElementById('loading-container').style.display = 'none';
             document.getElementById('form-container').style.display = 'block';
           }
@@ -173,25 +165,24 @@
         });
     }
 
+    // ฟังก์ชันจัดการเมื่อผู้ใช้กดปุ่ม "บันทึกข้อมูล"
     document.getElementById('regForm').addEventListener('submit', function(e) {
-      e.preventDefault(); 
+      e.preventDefault(); // ป้องกันการรีเฟรชหน้าเว็บ
       
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.innerText = "กำลังบันทึกข้อมูล...";
       document.getElementById('form-error').innerText = "";
 
-      // จัดเตรียมชุดข้อมูลให้ตรงกับโครงสร้างที่กำหนด (8 คอลัมน์)
+      // เตรียมชุดข้อมูลที่จะส่งไปให้ Google Apps Script
       const payload = {
-        userID: currentUserData.userID,
-        Displayname: currentUserData.Displayname,
-        language: currentUserData.language,
-        pictureUrl: currentUserData.pictureUrl,
-        name: document.getElementById('firstName').value,
-        surname: document.getElementById('lastName').value,
-        status: "ใช้งาน" // สถานะเริ่มต้น
+        lineId: currentUserLineId,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        phone: document.getElementById('phone').value
       };
 
+      // ส่งข้อมูลไปบันทึกด้วย POST
       fetch(GAS_API_URL, {
         method: 'POST',
         body: JSON.stringify(payload)
