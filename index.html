@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>กำลังตรวจสอบข้อมูล...</title>
-  <!-- นำเข้า LIFF SDK ที่ถูกต้อง (ห้ามมีวงเล็บแปลกปลอม) -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
@@ -42,6 +41,12 @@
       font-size: 14px;
       margin-top: 10px;
       white-space: pre-wrap;
+      text-align: center;
+    }
+    .debug-text {
+      color: #888;
+      font-size: 12px;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -50,27 +55,23 @@
   <div class="loader" id="loader"></div>
   <div class="message" id="status">กำลังเตรียมระบบ...</div>
   <div class="error-text" id="error-msg"></div>
+  <div class="debug-text" id="debug-msg"></div>
 
   <script>
-    // ==========================================
-    // 1. LIFF ID ของคุณ
-    // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
     
     // ==========================================
-    // 2. URL Web App ของ Google Apps Script ที่ถูกต้อง
+    // สำคัญ: ให้นำ URL API ล่าสุด (หลังจากกด Deploy ใหม่) มาใส่ตรงนี้
     // ==========================================
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec";
 
     window.onload = function() {
-      // เมื่อโหลดหน้าเว็บเสร็จ ให้เริ่มทำงาน LIFF ทันที
       initializeLiff();
     };
 
     function initializeLiff() {
       document.getElementById('status').innerText = "กำลังเชื่อมต่อกับระบบ LINE...";
       
-      // ลบ withLoginOnExternalBrowser ออก และใช้การตรวจสอบสถานะล็อกอินด้วยตัวเองเพื่อความชัวร์
       liff.init({ liffId: LIFF_ID })
         .then(() => {
           if (!liff.isLoggedIn()) {
@@ -83,32 +84,29 @@
           
           liff.getProfile().then(profile => {
             const lineId = profile.userId;
+            // โชว์ Line ID ให้เห็นชัดๆ เผื่อไว้ตรวจสอบกับใน Sheet
+            document.getElementById('debug-msg').innerText = "Line ID ของคุณ: " + lineId;
             checkLineIdWithAPI(lineId); 
           }).catch(err => {
-            document.getElementById('status').innerText = "ไม่สามารถดึงข้อมูลโปรไฟล์ได้";
-            document.getElementById('error-msg').innerText = err.message;
-            document.getElementById('loader').style.display = 'none';
+            showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message);
           });
         })
         .catch((err) => {
-          document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการโหลด LIFF";
-          document.getElementById('error-msg').innerText = "รายละเอียด: " + err.message;
-          document.getElementById('loader').style.display = 'none';
-          console.error(err);
+          showError("เกิดข้อผิดพลาดในการโหลด LIFF", err.message);
         });
     }
 
-    // ฟังก์ชันส่งข้อมูลไปให้ Google Apps Script
     function checkLineIdWithAPI(lineId) {
       document.getElementById('status').innerText = "กำลังตรวจสอบฐานข้อมูล...";
       
-      fetch(`${GAS_API_URL}?lineId=${lineId}`)
+      // เพิ่ม nocache parameter เพื่อป้องกันเบราว์เซอร์จำค่าเก่า (ตัวการที่ทำให้เด้งไปหน้าเดิมตลอด)
+      const fetchUrl = `${GAS_API_URL}?lineId=${lineId}&nocache=${new Date().getTime()}`;
+      
+      fetch(fetchUrl)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
-             document.getElementById('status').innerText = "พบปัญหาการเชื่อมต่อฐานข้อมูล";
-             document.getElementById('error-msg').innerText = data.error;
-             document.getElementById('loader').style.display = 'none';
+             showError("พบปัญหาการเชื่อมต่อฐานข้อมูล", data.error);
              return;
           }
 
@@ -118,13 +116,21 @@
             document.getElementById('status').innerText = "ยังไม่ได้ลงทะเบียน กำลังพาท่านไปยังหน้าลงทะเบียน...";
           }
           
-          window.location.replace(data.redirectUrl);
+          // หน่วงเวลา 1.5 วินาที เพื่อให้เห็นสถานะก่อนเปลี่ยนหน้าต่าง
+          setTimeout(() => {
+            window.location.replace(data.redirectUrl);
+          }, 1500);
+          
         })
         .catch(error => {
-          document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
-          document.getElementById('error-msg').innerText = error.message;
-          document.getElementById('loader').style.display = 'none';
+          showError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", error.message);
         });
+    }
+
+    function showError(title, detail) {
+      document.getElementById('status').innerText = title;
+      document.getElementById('error-msg').innerText = detail;
+      document.getElementById('loader').style.display = 'none';
     }
   </script>
 </body>
