@@ -9,7 +9,7 @@
   <style>
     body {
       font-family: 'Sarabun', sans-serif;
-      background-color: #f5f6f8;
+      background-color: #f0f2f5;
       margin: 0;
       display: flex;
       flex-direction: column;
@@ -21,55 +21,114 @@
     }
     .card {
       background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 30px 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
       width: 100%;
       max-width: 400px;
       text-align: center;
+      position: relative;
+      margin-top: 50px; /* เผื่อพื้นที่ให้รูปโปรไฟล์ลอยด้านบน */
     }
     .loader {
-      border: 5px solid #e0e0e0;
-      border-top: 5px solid #00c300;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #00c300;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 45px;
+      height: 45px;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
-    /* สไตล์สำหรับฟอร์ม (เริ่มต้นจะถูกซ่อนไว้) */
-    #form-container { display: none; }
-    h2 { color: #333; margin-top: 0; }
-    .form-group { text-align: left; margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; font-weight: 600; }
+    /* สไตล์สำหรับฟอร์มและรูปโปรไฟล์ */
+    #form-container { 
+      display: none; 
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .profile-img-container {
+      margin: -70px auto 15px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background-color: #fff;
+      padding: 5px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .profile-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #00c300;
+    }
+
+    .greeting {
+      color: #333;
+      font-size: 20px;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    .sub-greeting {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    .form-group { text-align: left; margin-bottom: 18px; }
+    label { display: block; margin-bottom: 8px; color: #444; font-size: 14px; font-weight: 600; }
+    
     input[type="text"], input[type="tel"] {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      padding: 14px;
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
       box-sizing: border-box;
       font-family: 'Sarabun', sans-serif;
       font-size: 16px;
+      transition: all 0.3s ease;
     }
-    input:focus { border-color: #00c300; outline: none; }
+    input:focus { 
+      background-color: #ffffff;
+      border-color: #00c300; 
+      outline: none; 
+      box-shadow: 0 0 0 4px rgba(0, 195, 0, 0.1);
+    }
+    
     button {
       background-color: #00c300;
       color: white;
       border: none;
-      padding: 14px;
+      padding: 15px;
       width: 100%;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 16px;
       font-family: 'Sarabun', sans-serif;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.3s;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 195, 0, 0.2);
     }
-    button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
-    .error-text { color: #ff3b30; font-size: 14px; margin-top: 15px; }
+    button:hover {
+      background-color: #00b300;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px rgba(0, 195, 0, 0.25);
+    }
+    button:disabled { 
+      background-color: #cccccc; 
+      cursor: not-allowed; 
+      box-shadow: none;
+      transform: none;
+    }
+    .error-text { color: #ef4444; font-size: 14px; margin-top: 15px; }
   </style>
 </head>
 <body>
@@ -78,17 +137,23 @@
     <!-- ส่วนโหลดข้อมูลและแจ้งสถานะ -->
     <div id="loading-container">
       <div class="loader" id="loader-spinner"></div>
-      <div id="status-text" style="font-size: 18px; color: #333;">กำลังเตรียมระบบ...</div>
+      <div id="status-text" style="font-size: 18px; color: #333; font-weight: 600;">กำลังเตรียมระบบ...</div>
       <div id="error-msg" class="error-text"></div>
     </div>
 
     <!-- ส่วนฟอร์มลงทะเบียน -->
     <div id="form-container">
-      <h2>ลงทะเบียนสมาชิกใหม่</h2>
+      <!-- รูปโปรไฟล์จะมาแสดงตรงนี้ -->
+      <div class="profile-img-container">
+        <img id="profileImage" class="profile-img" src="" alt="Profile Picture">
+      </div>
+      <div class="greeting" id="greetingText">ลงทะเบียนสมาชิก</div>
+      <div class="sub-greeting">กรุณากรอกข้อมูลเพื่อยืนยันตัวตน</div>
+
       <form id="regForm">
         <div class="form-group">
           <label>ชื่อ</label>
-          <input type="text" id="firstName" placeholder="กรอกชื่อ" required>
+          <input type="text" id="firstName" placeholder="กรอกชื่อจริง" required>
         </div>
         <div class="form-group">
           <label>นามสกุล</label>
@@ -107,8 +172,6 @@
   <script>
     // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
-    
-    // ใส่ URL ของ Google Apps Script ที่ Deploy ล่าสุด
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwZrBaqJSx2looszcbA3Rrq_71gefV_6RJwLLV-8ZT4UXTcUXZat7z-Svhsr6uzzQc6/exec";
     // ==========================================
 
@@ -128,13 +191,20 @@
           liff.login();
           return;
         }
-        document.getElementById('status-text').innerText = "กำลังตรวจสอบสถานะสมาชิก...";
+        document.getElementById('status-text').innerText = "กำลังดึงข้อมูลโปรไฟล์...";
         liff.getProfile().then(profile => {
-          // เก็บข้อมูลโปรไฟล์เพิ่มเติม
+          // 1. เก็บข้อมูลโปรไฟล์
           currentUserLineId = profile.userId;
-          currentDisplayName = profile.displayName || "";
-          currentPictureUrl = profile.pictureUrl || "";
+          currentDisplayName = profile.displayName || "ผู้ใช้งาน";
+          // ใช้รูประบบถ้าผู้ใช้ไม่มีรูปโปรไฟล์
+          currentPictureUrl = profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
           
+          // 2. นำข้อมูลไปแสดงผลรอไว้ในฟอร์ม (ฟอร์มยังถูกซ่อนอยู่)
+          document.getElementById('profileImage').src = currentPictureUrl;
+          document.getElementById('greetingText').innerText = `สวัสดีคุณ ${currentDisplayName}`;
+          
+          document.getElementById('status-text').innerText = "กำลังตรวจสอบสถานะสมาชิก...";
+          // 3. เช็คฐานข้อมูล
           checkLineIdWithAPI(currentUserLineId); 
         }).catch(err => {
           showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message);
@@ -161,7 +231,7 @@
             document.getElementById('status-text').innerText = "พบข้อมูลในระบบ กำลังพาท่านเข้าสู่ระบบ...";
             window.location.replace(data.redirectUrl);
           } else {
-            // ยังไม่มีข้อมูล ซ่อนตัวโหลด แล้วแสดงฟอร์ม
+            // ยังไม่มีข้อมูล ซ่อนตัวโหลด แล้วแสดงฟอร์มพร้อมรูปโปรไฟล์
             document.getElementById('loading-container').style.display = 'none';
             document.getElementById('form-container').style.display = 'block';
           }
@@ -173,7 +243,7 @@
 
     // ฟังก์ชันจัดการเมื่อผู้ใช้กดปุ่ม "บันทึกข้อมูล"
     document.getElementById('regForm').addEventListener('submit', function(e) {
-      e.preventDefault(); // ป้องกันการรีเฟรชหน้าเว็บ
+      e.preventDefault(); 
       
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
@@ -190,13 +260,13 @@
         phone: document.getElementById('phone').value
       };
 
-      // ส่งข้อมูลไปบันทึกด้วย POST (เพิ่ม Headers แก้ปัญหา CORS แล้ว)
+      // ส่งข้อมูลไปบันทึกด้วย POST (Headers แก้ปัญหา CORS)
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain;charset=utf-8', 
         },
-        redirect: 'follow', // จำเป็นต้องใส่เพื่อแก้ปัญหา CORS ในฝั่ง GAS
+        redirect: 'follow', 
         body: JSON.stringify(payload)
       })
       .then(response => response.json())
