@@ -108,11 +108,13 @@
     // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
     
-    // นำ URL Web App ของ Google Apps Script อันใหม่มาวางที่นี่
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwZrBaqJSx2looszcbA3Rrq_71gefV_6RJwLLV-8ZT4UXTcUXZat7z-Svhsr6uzzQc6/exec";
+    // ใส่ URL ของ Google Apps Script ที่ Deploy ล่าสุด
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec";
     // ==========================================
 
     let currentUserLineId = "";
+    let currentDisplayName = "";
+    let currentPictureUrl = "";
 
     window.onload = function() {
       initializeLiff();
@@ -128,7 +130,11 @@
         }
         document.getElementById('status-text').innerText = "กำลังตรวจสอบสถานะสมาชิก...";
         liff.getProfile().then(profile => {
+          // เก็บข้อมูลโปรไฟล์เพิ่มเติม
           currentUserLineId = profile.userId;
+          currentDisplayName = profile.displayName || "";
+          currentPictureUrl = profile.pictureUrl || "";
+          
           checkLineIdWithAPI(currentUserLineId); 
         }).catch(err => {
           showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message);
@@ -174,17 +180,23 @@
       btn.innerText = "กำลังบันทึกข้อมูล...";
       document.getElementById('form-error').innerText = "";
 
-      // เตรียมชุดข้อมูลที่จะส่งไปให้ Google Apps Script
+      // เพิ่ม displayName และ pictureUrl เข้าไปใน payload
       const payload = {
         lineId: currentUserLineId,
+        displayName: currentDisplayName,
+        pictureUrl: currentPictureUrl,
         firstName: document.getElementById('firstName').value,
         lastName: document.getElementById('lastName').value,
         phone: document.getElementById('phone').value
       };
 
-      // ส่งข้อมูลไปบันทึกด้วย POST
+      // ส่งข้อมูลไปบันทึกด้วย POST (เพิ่ม Headers แก้ปัญหา CORS แล้ว)
       fetch(GAS_API_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8', 
+        },
+        redirect: 'follow', // จำเป็นต้องใส่เพื่อแก้ปัญหา CORS ในฝั่ง GAS
         body: JSON.stringify(payload)
       })
       .then(response => response.json())
