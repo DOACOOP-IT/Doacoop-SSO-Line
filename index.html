@@ -250,6 +250,10 @@
       btn.innerText = "กำลังบันทึกข้อมูล...";
       document.getElementById('form-error').innerText = "";
 
+      // ทำความสะอาดเบอร์โทรศัพท์ให้เหลือแค่ตัวเลข (ลบช่องว่าง หรือ ขีด ทิ้ง)
+      const rawPhone = document.getElementById('phone').value;
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+
       // เพิ่ม displayName และ pictureUrl เข้าไปใน payload
       const payload = {
         lineId: currentUserLineId,
@@ -257,7 +261,7 @@
         pictureUrl: currentPictureUrl,
         firstName: document.getElementById('firstName').value,
         lastName: document.getElementById('lastName').value,
-        phone: document.getElementById('phone').value
+        phone: cleanPhone
       };
 
       // ส่งข้อมูลไปบันทึกด้วย POST (Headers แก้ปัญหา CORS)
