@@ -3,103 +3,143 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>กำลังตรวจสอบข้อมูล...</title>
+  <title>ระบบสมาชิก</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Sarabun', sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       background-color: #f5f6f8;
       margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
     }
     .loader {
       border: 5px solid #e0e0e0;
       border-top: 5px solid #00c300;
       border-radius: 50%;
-      width: 50px;
-      height: 50px;
+      width: 40px;
+      height: 40px;
       animation: spin 1s linear infinite;
-      margin-bottom: 20px;
+      margin: 0 auto 20px;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* สไตล์สำหรับฟอร์ม (เริ่มต้นจะถูกซ่อนไว้) */
+    #form-container { display: none; }
+    h2 { color: #333; margin-top: 0; }
+    .form-group { text-align: left; margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; font-weight: 600; }
+    input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 16px;
     }
-    .message {
-      font-size: 18px;
-      color: #333;
-      text-align: center;
-      padding: 0 20px;
-      word-wrap: break-word;
-    }
-    .error-text {
-      color: #ff3b30;
-      font-size: 14px;
+    input:focus { border-color: #00c300; outline: none; }
+    button {
+      background-color: #00c300;
+      color: white;
+      border: none;
+      padding: 14px;
+      width: 100%;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: 'Sarabun', sans-serif;
+      font-weight: bold;
+      cursor: pointer;
       margin-top: 10px;
-      white-space: pre-wrap;
-      text-align: center;
+      transition: background 0.3s;
     }
-    .debug-text {
-      color: #888;
-      font-size: 12px;
-      margin-top: 20px;
-    }
+    button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+    .error-text { color: #ff3b30; font-size: 14px; margin-top: 15px; }
   </style>
 </head>
 <body>
 
-  <div class="loader" id="loader"></div>
-  <div class="message" id="status">กำลังเตรียมระบบ...</div>
-  <div class="error-text" id="error-msg"></div>
-  <div class="debug-text" id="debug-msg"></div>
+  <div class="card">
+    <!-- ส่วนโหลดข้อมูลและแจ้งสถานะ -->
+    <div id="loading-container">
+      <div class="loader" id="loader-spinner"></div>
+      <div id="status-text" style="font-size: 18px; color: #333;">กำลังเตรียมระบบ...</div>
+      <div id="error-msg" class="error-text"></div>
+    </div>
+
+    <!-- ส่วนฟอร์มลงทะเบียน -->
+    <div id="form-container">
+      <h2>ลงทะเบียนสมาชิกใหม่</h2>
+      <form id="regForm">
+        <div class="form-group">
+          <label>ชื่อ</label>
+          <input type="text" id="firstName" placeholder="กรอกชื่อ" required>
+        </div>
+        <div class="form-group">
+          <label>นามสกุล</label>
+          <input type="text" id="lastName" placeholder="กรอกนามสกุล" required>
+        </div>
+        <div class="form-group">
+          <label>หมายเลขโทรศัพท์</label>
+          <input type="tel" id="phone" placeholder="เช่น 0812345678" pattern="[0-9]{9,10}" required>
+        </div>
+        <button type="submit" id="submitBtn">บันทึกข้อมูลและเข้าสู่ระบบ</button>
+        <div id="form-error" class="error-text"></div>
+      </form>
+    </div>
+  </div>
 
   <script>
+    // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
     
-    // ==========================================
-    // สำคัญ: ให้นำ URL API ล่าสุด (หลังจากกด Deploy ใหม่) มาใส่ตรงนี้
-    // ==========================================
+    // นำ URL Web App ของ Google Apps Script อันใหม่มาวางที่นี่
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwZrBaqJSx2looszcbA3Rrq_71gefV_6RJwLLV-8ZT4UXTcUXZat7z-Svhsr6uzzQc6/exec";
+    // ==========================================
+
+    let currentUserLineId = "";
 
     window.onload = function() {
       initializeLiff();
     };
 
     function initializeLiff() {
-      document.getElementById('status').innerText = "กำลังเชื่อมต่อกับระบบ LINE...";
+      document.getElementById('status-text').innerText = "กำลังเชื่อมต่อกับระบบ LINE...";
       
-      liff.init({ liffId: LIFF_ID })
-        .then(() => {
-          if (!liff.isLoggedIn()) {
-            document.getElementById('status').innerText = "กำลังพาท่านไปเข้าสู่ระบบ LINE...";
-            liff.login();
-            return;
-          }
-
-          document.getElementById('status').innerText = "กำลังดึงข้อมูลโปรไฟล์...";
-          
-          liff.getProfile().then(profile => {
-            const lineId = profile.userId;
-            // โชว์ Line ID ให้เห็นชัดๆ เผื่อไว้ตรวจสอบกับใน Sheet
-            document.getElementById('debug-msg').innerText = "Line ID ของคุณ: " + lineId;
-            checkLineIdWithAPI(lineId); 
-          }).catch(err => {
-            showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message);
-          });
-        })
-        .catch((err) => {
-          showError("เกิดข้อผิดพลาดในการโหลด LIFF", err.message);
+      liff.init({ liffId: LIFF_ID }).then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+        document.getElementById('status-text').innerText = "กำลังตรวจสอบสถานะสมาชิก...";
+        liff.getProfile().then(profile => {
+          currentUserLineId = profile.userId;
+          checkLineIdWithAPI(currentUserLineId); 
+        }).catch(err => {
+          showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message);
         });
+      }).catch(err => {
+        showError("เกิดข้อผิดพลาดในการโหลด LIFF", err.message);
+      });
     }
 
+    // ฟังก์ชันเช็คว่ามี Line ID ในระบบหรือยัง (GET)
     function checkLineIdWithAPI(lineId) {
-      document.getElementById('status').innerText = "กำลังตรวจสอบฐานข้อมูล...";
-      
-      // เพิ่ม nocache parameter เพื่อป้องกันเบราว์เซอร์จำค่าเก่า (ตัวการที่ทำให้เด้งไปหน้าเดิมตลอด)
       const fetchUrl = `${GAS_API_URL}?lineId=${lineId}&nocache=${new Date().getTime()}`;
       
       fetch(fetchUrl)
@@ -111,26 +151,64 @@
           }
 
           if (data.isRegistered) {
-            document.getElementById('status').innerText = "พบข้อมูลในระบบ กำลังพาท่านเข้าสู่ระบบ...";
-          } else {
-            document.getElementById('status').innerText = "ยังไม่ได้ลงทะเบียน กำลังพาท่านไปยังหน้าลงทะเบียน...";
-          }
-          
-          // หน่วงเวลา 1.5 วินาที เพื่อให้เห็นสถานะก่อนเปลี่ยนหน้าต่าง
-          setTimeout(() => {
+            // มีข้อมูลแล้ว พาไปหน้าระบบ
+            document.getElementById('status-text').innerText = "พบข้อมูลในระบบ กำลังพาท่านเข้าสู่ระบบ...";
             window.location.replace(data.redirectUrl);
-          }, 1500);
-          
+          } else {
+            // ยังไม่มีข้อมูล ซ่อนตัวโหลด แล้วแสดงฟอร์ม
+            document.getElementById('loading-container').style.display = 'none';
+            document.getElementById('form-container').style.display = 'block';
+          }
         })
         .catch(error => {
           showError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", error.message);
         });
     }
 
+    // ฟังก์ชันจัดการเมื่อผู้ใช้กดปุ่ม "บันทึกข้อมูล"
+    document.getElementById('regForm').addEventListener('submit', function(e) {
+      e.preventDefault(); // ป้องกันการรีเฟรชหน้าเว็บ
+      
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = "กำลังบันทึกข้อมูล...";
+      document.getElementById('form-error').innerText = "";
+
+      // เตรียมชุดข้อมูลที่จะส่งไปให้ Google Apps Script
+      const payload = {
+        lineId: currentUserLineId,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        phone: document.getElementById('phone').value
+      };
+
+      // ส่งข้อมูลไปบันทึกด้วย POST
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          btn.innerText = "บันทึกสำเร็จ! กำลังเข้าสู่ระบบ...";
+          window.location.replace(data.redirectUrl);
+        } else {
+          btn.disabled = false;
+          btn.innerText = "บันทึกข้อมูลและเข้าสู่ระบบ";
+          document.getElementById('form-error').innerText = "เกิดข้อผิดพลาด: " + data.error;
+        }
+      })
+      .catch(error => {
+        btn.disabled = false;
+        btn.innerText = "บันทึกข้อมูลและเข้าสู่ระบบ";
+        document.getElementById('form-error').innerText = "เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว กรุณาลองใหม่อีกครั้ง";
+      });
+    });
+
     function showError(title, detail) {
-      document.getElementById('status').innerText = title;
+      document.getElementById('loader-spinner').style.display = 'none';
+      document.getElementById('status-text').innerText = title;
       document.getElementById('error-msg').innerText = detail;
-      document.getElementById('loader').style.display = 'none';
     }
   </script>
 </body>
