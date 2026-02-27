@@ -108,7 +108,7 @@
     // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
     
-    // ใส่ URL ของ Google Apps Script ที่เพิ่ง Deploy ใหม่อีกครั้ง
+    // นำ URL Web App ของ Google Apps Script อันใหม่มาวางที่นี่
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwZrBaqJSx2looszcbA3Rrq_71gefV_6RJwLLV-8ZT4UXTcUXZat7z-Svhsr6uzzQc6/exec";
     // ==========================================
 
@@ -182,13 +182,9 @@
         phone: document.getElementById('phone').value
       };
 
-      // ✨ จุดที่แก้ไข: เพิ่ม headers แบบ text/plain และ redirect: 'follow' เพื่อทะลุการบล็อก CORS
+      // ส่งข้อมูลไปบันทึกด้วย POST
       fetch(GAS_API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8', 
-        },
-        redirect: 'follow', 
         body: JSON.stringify(payload)
       })
       .then(response => response.json())
