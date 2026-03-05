@@ -28,7 +28,6 @@
       max-width: 400px;
       text-align: center;
       position: relative;
-      margin-top: 50px; /* เผื่อพื้นที่ให้รูปโปรไฟล์ลอยด้านบน */
     }
     .loader {
       border: 4px solid #f3f3f3;
@@ -41,10 +40,9 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
-    /* สไตล์สำหรับฟอร์มและรูปโปรไฟล์ */
-    #form-container { 
+    #login-container, #form-container { 
       display: none; 
-      animation: fadeIn 0.6s ease-out;
+      animation: fadeIn 0.4s ease-out;
     }
     
     @keyframes fadeIn {
@@ -52,41 +50,13 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .profile-img-container {
-      margin: -70px auto 15px;
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background-color: #fff;
-      padding: 5px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .profile-img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #00c300;
-    }
-
-    .greeting {
-      color: #333;
-      font-size: 20px;
-      margin-bottom: 5px;
-      font-weight: 600;
-    }
-    .sub-greeting {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 25px;
-    }
-
-    .form-group { text-align: left; margin-bottom: 18px; }
+    h2 { color: #333; margin-top: 0; margin-bottom: 20px;}
+    .form-group { text-align: left; margin-bottom: 15px; }
     label { display: block; margin-bottom: 8px; color: #444; font-size: 14px; font-weight: 600; }
     
-    input[type="text"], input[type="tel"] {
+    input[type="text"], input[type="password"], input[type="tel"] {
       width: 100%;
-      padding: 14px;
+      padding: 12px 14px;
       background-color: #f9fafb;
       border: 1px solid #e5e7eb;
       border-radius: 10px;
@@ -117,42 +87,78 @@
       transition: all 0.3s ease;
       box-shadow: 0 4px 6px rgba(0, 195, 0, 0.2);
     }
-    button:hover {
-      background-color: #00b300;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 8px rgba(0, 195, 0, 0.25);
-    }
-    button:disabled { 
-      background-color: #cccccc; 
-      cursor: not-allowed; 
-      box-shadow: none;
-      transform: none;
+    button:hover { background-color: #00b300; transform: translateY(-1px); }
+    button:disabled { background-color: #cccccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    .text-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #00c300;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
     }
     .error-text { color: #ef4444; font-size: 14px; margin-top: 15px; }
+
+    /* โปรไฟล์โชว์ตอนสมัครด้วย LINE */
+    .profile-img-container {
+      margin: -70px auto 15px; width: 80px; height: 80px; border-radius: 50%;
+      background-color: #fff; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: none; /* ซ่อนไว้ก่อน จะโชว์แค่ตอนเปิดด้วย LINE */
+    }
+    .profile-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #00c300; }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <!-- ส่วนโหลดข้อมูลและแจ้งสถานะ -->
+  <div class="card" id="mainCard">
+    <!-- 1. ส่วนโหลดข้อมูล -->
     <div id="loading-container">
       <div class="loader" id="loader-spinner"></div>
-      <div id="status-text" style="font-size: 18px; color: #333; font-weight: 600;">กำลังเตรียมระบบ...</div>
+      <div id="status-text" style="font-size: 18px; color: #333; font-weight: 600;">กำลังตรวจสอบระบบ...</div>
       <div id="error-msg" class="error-text"></div>
     </div>
 
-    <!-- ส่วนฟอร์มลงทะเบียน -->
-    <div id="form-container">
-      <!-- รูปโปรไฟล์จะมาแสดงตรงนี้ -->
-      <div class="profile-img-container">
-        <img id="profileImage" class="profile-img" src="" alt="Profile Picture">
-      </div>
-      <div class="greeting" id="greetingText">ลงทะเบียนสมาชิก</div>
-      <div class="sub-greeting">กรุณากรอกข้อมูลเพื่อยืนยันตัวตน</div>
-
-      <form id="regForm">
+    <!-- 2. ฟอร์มเข้าสู่ระบบ (สำหรับเปิดบน PC) -->
+    <div id="login-container">
+      <h2>เข้าสู่ระบบ (PC)</h2>
+      <form id="loginForm">
         <div class="form-group">
-          <label>ชื่อ</label>
+          <label>Username</label>
+          <input type="text" id="loginUser" placeholder="ชื่อผู้ใช้งาน" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPass" placeholder="รหัสผ่าน" required>
+        </div>
+        <button type="submit" id="loginBtn">เข้าสู่ระบบ</button>
+        <div id="login-error" class="error-text"></div>
+        <div class="text-link" onclick="toggleForms('register')">ยังไม่มีบัญชี? สมัครสมาชิก</div>
+      </form>
+    </div>
+
+    <!-- 3. ฟอร์มลงทะเบียน -->
+    <div id="form-container">
+      <div class="profile-img-container" id="profileBox">
+        <img id="profileImage" class="profile-img" src="" alt="Profile">
+      </div>
+      <h2>สมัครสมาชิกใหม่</h2>
+      <form id="regForm">
+        <!-- บัญชีผู้ใช้ -->
+        <div class="form-group">
+          <label>Username (สำหรับเข้าสู่ระบบ)</label>
+          <input type="text" id="regUser" placeholder="ตั้งชื่อผู้ใช้งาน" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="regPass" placeholder="ตั้งรหัสผ่าน" required>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+        <!-- ข้อมูลส่วนตัว -->
+        <div class="form-group">
+          <label>ชื่อจริง</label>
           <input type="text" id="firstName" placeholder="กรอกชื่อจริง" required>
         </div>
         <div class="form-group">
@@ -163,8 +169,9 @@
           <label>หมายเลขโทรศัพท์</label>
           <input type="tel" id="phone" placeholder="เช่น 0812345678" pattern="[0-9]{9,10}" required>
         </div>
-        <button type="submit" id="submitBtn">บันทึกข้อมูลและเข้าสู่ระบบ</button>
+        <button type="submit" id="submitBtn">ลงทะเบียนและเข้าสู่ระบบ</button>
         <div id="form-error" class="error-text"></div>
+        <div class="text-link" id="backToLoginLink" onclick="toggleForms('login')" style="display:none;">กลับไปหน้าเข้าสู่ระบบ</div>
       </form>
     </div>
   </div>
@@ -172,7 +179,8 @@
   <script>
     // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwZrBaqJSx2looszcbA3Rrq_71gefV_6RJwLLV-8ZT4UXTcUXZat7z-Svhsr6uzzQc6/exec";
+    // ใส่ URL ของ Google Apps Script ที่ Deploy ล่าสุด (อย่าลืม Deploy ใหม่นะ)
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz0yO5JUF84yRXXfe6fAv8kSDLBvgvH1ONQ8QZ6zTc4q1NrArwcqazwLuqU3E1bnqU/exec";
     // ==========================================
 
     let currentUserLineId = "";
@@ -180,83 +188,108 @@
     let currentPictureUrl = "";
 
     window.onload = function() {
-      initializeLiff();
+      // ตรวจสอบ LIFF
+      liff.init({ liffId: LIFF_ID }).then(() => {
+        if (liff.isLoggedIn()) {
+          // ถ้าล็อกอิน LINE อยู่ (เช่นเปิดผ่านแอป LINE)
+          document.getElementById('status-text').innerText = "กำลังตรวจสอบบัญชี LINE...";
+          liff.getProfile().then(profile => {
+            currentUserLineId = profile.userId;
+            currentDisplayName = profile.displayName || "";
+            currentPictureUrl = profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+            
+            checkLineIdWithAPI(currentUserLineId); 
+          }).catch(err => showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message));
+        } else {
+          // ถ้าเปิดในคอม (ไม่ล็อกอิน LINE) โชว์ฟอร์มล็อกอิน PC
+          document.getElementById('loading-container').style.display = 'none';
+          document.getElementById('login-container').style.display = 'block';
+          document.getElementById('backToLoginLink').style.display = 'inline-block'; // เปิดปุ่มกลับไปหน้า Login
+        }
+      }).catch(err => {
+        // ถ้าระบบ LIFF พัง ก็ให้เปิดฟอร์ม Login PC เป็นค่าเริ่มต้น
+        document.getElementById('loading-container').style.display = 'none';
+        document.getElementById('login-container').style.display = 'block';
+        document.getElementById('backToLoginLink').style.display = 'inline-block';
+      });
     };
 
-    function initializeLiff() {
-      document.getElementById('status-text').innerText = "กำลังเชื่อมต่อกับระบบ LINE...";
-      
-      liff.init({ liffId: LIFF_ID }).then(() => {
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-        document.getElementById('status-text').innerText = "กำลังดึงข้อมูลโปรไฟล์...";
-        liff.getProfile().then(profile => {
-          // 1. เก็บข้อมูลโปรไฟล์
-          currentUserLineId = profile.userId;
-          currentDisplayName = profile.displayName || "ผู้ใช้งาน";
-          // ใช้รูประบบถ้าผู้ใช้ไม่มีรูปโปรไฟล์
-          currentPictureUrl = profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
-          
-          // 2. นำข้อมูลไปแสดงผลรอไว้ในฟอร์ม (ฟอร์มยังถูกซ่อนอยู่)
-          document.getElementById('profileImage').src = currentPictureUrl;
-          document.getElementById('greetingText').innerText = `สวัสดีคุณ ${currentDisplayName}`;
-          
-          document.getElementById('status-text').innerText = "กำลังตรวจสอบสถานะสมาชิก...";
-          // 3. เช็คฐานข้อมูล
-          checkLineIdWithAPI(currentUserLineId); 
-        }).catch(err => {
-          showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message);
-        });
-      }).catch(err => {
-        showError("เกิดข้อผิดพลาดในการโหลด LIFF", err.message);
-      });
+    // สลับหน้าจอ Login กับ Register
+    function toggleForms(target) {
+      document.getElementById('login-error').innerText = "";
+      document.getElementById('form-error').innerText = "";
+      if (target === 'register') {
+        document.getElementById('login-container').style.display = 'none';
+        document.getElementById('form-container').style.display = 'block';
+      } else {
+        document.getElementById('form-container').style.display = 'none';
+        document.getElementById('login-container').style.display = 'block';
+      }
     }
 
-    // ฟังก์ชันเช็คว่ามี Line ID ในระบบหรือยัง (GET)
+    // 1. เช็ค LINE ID (กรณีกดจากมือถือ)
     function checkLineIdWithAPI(lineId) {
-      const fetchUrl = `${GAS_API_URL}?lineId=${lineId}&nocache=${new Date().getTime()}`;
-      
-      fetch(fetchUrl)
-        .then(response => response.json())
+      fetch(`${GAS_API_URL}?lineId=${lineId}&nocache=${new Date().getTime()}`)
+        .then(res => res.json())
         .then(data => {
-          if (data.error) {
-             showError("พบปัญหาการเชื่อมต่อฐานข้อมูล", data.error);
-             return;
-          }
-
           if (data.isRegistered) {
-            // มีข้อมูลแล้ว พาไปหน้าระบบ
-            document.getElementById('status-text').innerText = "พบข้อมูลในระบบ กำลังพาท่านเข้าสู่ระบบ...";
+            document.getElementById('status-text').innerText = "เข้าสู่ระบบอัตโนมัติ...";
             window.location.replace(data.redirectUrl);
           } else {
-            // ยังไม่มีข้อมูล ซ่อนตัวโหลด แล้วแสดงฟอร์มพร้อมรูปโปรไฟล์
+            // ไม่พบข้อมูลในระบบ โชว์หน้าสมัคร พร้อมรูปโปรไฟล์
             document.getElementById('loading-container').style.display = 'none';
             document.getElementById('form-container').style.display = 'block';
+            document.getElementById('profileBox').style.display = 'block';
+            document.getElementById('profileImage').src = currentPictureUrl;
+            document.getElementById('mainCard').style.marginTop = '60px'; // ดันการ์ดลงรับรูป
           }
-        })
-        .catch(error => {
-          showError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", error.message);
-        });
+        }).catch(err => showError("เซิร์ฟเวอร์ขัดข้อง", err.message));
     }
 
-    // ฟังก์ชันจัดการเมื่อผู้ใช้กดปุ่ม "บันทึกข้อมูล"
+    // 2. ฟังก์ชันเข้าสู่ระบบผ่าน PC
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true; btn.innerText = "กำลังเข้าสู่ระบบ...";
+
+      const payload = {
+        action: 'login',
+        username: document.getElementById('loginUser').value,
+        password: document.getElementById('loginPass').value
+      };
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        redirect: 'follow',
+        body: JSON.stringify(payload)
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          window.location.replace(data.redirectUrl);
+        } else {
+          btn.disabled = false; btn.innerText = "เข้าสู่ระบบ";
+          document.getElementById('login-error').innerText = data.error;
+        }
+      }).catch(err => {
+        btn.disabled = false; btn.innerText = "เข้าสู่ระบบ";
+        document.getElementById('login-error').innerText = "การเชื่อมต่อล้มเหลว";
+      });
+    });
+
+    // 3. ฟังก์ชันลงทะเบียน
     document.getElementById('regForm').addEventListener('submit', function(e) {
       e.preventDefault(); 
-      
       const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.innerText = "กำลังบันทึกข้อมูล...";
-      document.getElementById('form-error').innerText = "";
-
-      // ทำความสะอาดเบอร์โทรศัพท์ให้เหลือแค่ตัวเลข (ลบช่องว่าง หรือ ขีด ทิ้ง)
+      btn.disabled = true; btn.innerText = "กำลังบันทึกข้อมูล...";
+      
       const rawPhone = document.getElementById('phone').value;
       const cleanPhone = rawPhone.replace(/\D/g, '');
 
-      // เพิ่ม displayName และ pictureUrl เข้าไปใน payload
       const payload = {
+        action: 'register',
         lineId: currentUserLineId,
+        username: document.getElementById('regUser').value,
+        password: document.getElementById('regPass').value,
         displayName: currentDisplayName,
         pictureUrl: currentPictureUrl,
         firstName: document.getElementById('firstName').value,
@@ -264,30 +297,22 @@
         phone: cleanPhone
       };
 
-      // ส่งข้อมูลไปบันทึกด้วย POST (Headers แก้ปัญหา CORS)
       fetch(GAS_API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8', 
-        },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         redirect: 'follow', 
         body: JSON.stringify(payload)
-      })
-      .then(response => response.json())
-      .then(data => {
+      }).then(res => res.json()).then(data => {
         if (data.success) {
-          btn.innerText = "บันทึกสำเร็จ! กำลังเข้าสู่ระบบ...";
+          btn.innerText = "สำเร็จ! กำลังเข้าสู่ระบบ...";
           window.location.replace(data.redirectUrl);
         } else {
-          btn.disabled = false;
-          btn.innerText = "บันทึกข้อมูลและเข้าสู่ระบบ";
-          document.getElementById('form-error').innerText = "เกิดข้อผิดพลาด: " + data.error;
+          btn.disabled = false; btn.innerText = "ลงทะเบียนและเข้าสู่ระบบ";
+          document.getElementById('form-error').innerText = data.error;
         }
-      })
-      .catch(error => {
-        btn.disabled = false;
-        btn.innerText = "บันทึกข้อมูลและเข้าสู่ระบบ";
-        document.getElementById('form-error').innerText = "เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว กรุณาลองใหม่อีกครั้ง";
+      }).catch(err => {
+        btn.disabled = false; btn.innerText = "ลงทะเบียนและเข้าสู่ระบบ";
+        document.getElementById('form-error').innerText = "การเชื่อมต่อล้มเหลว";
       });
     });
 
