@@ -39,12 +39,12 @@
       margin: 0 auto 20px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    
-    #login-container, #form-container { 
-      display: none; 
+
+    #login-container, #form-container {
+      display: none;
       animation: fadeIn 0.4s ease-out;
     }
-    
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -53,7 +53,7 @@
     h2 { color: #333; margin-top: 0; margin-bottom: 20px;}
     .form-group { text-align: left; margin-bottom: 15px; }
     label { display: block; margin-bottom: 8px; color: #444; font-size: 14px; font-weight: 600; }
-    
+
     input[type="text"], input[type="password"], input[type="tel"] {
       width: 100%;
       padding: 12px 14px;
@@ -65,13 +65,13 @@
       font-size: 16px;
       transition: all 0.3s ease;
     }
-    input:focus { 
+    input:focus {
       background-color: #ffffff;
-      border-color: #00c300; 
-      outline: none; 
+      border-color: #00c300;
+      outline: none;
       box-shadow: 0 0 0 4px rgba(0, 195, 0, 0.1);
     }
-    
+
     button {
       background-color: #00c300;
       color: white;
@@ -89,7 +89,7 @@
     }
     button:hover { background-color: #00b300; transform: translateY(-1px); }
     button:disabled { background-color: #cccccc; cursor: not-allowed; transform: none; box-shadow: none; }
-    
+
     .text-link {
       display: inline-block;
       margin-top: 20px;
@@ -104,7 +104,7 @@
     .profile-img-container {
       margin: -70px auto 15px; width: 80px; height: 80px; border-radius: 50%;
       background-color: #fff; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      display: none; 
+      display: none;
     }
     .profile-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #00c300; }
   </style>
@@ -153,7 +153,7 @@
           <label>Password</label>
           <input type="password" id="regPass" placeholder="ตั้งรหัสผ่าน" required>
         </div>
-        
+
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
         <!-- ข้อมูลส่วนตัว -->
@@ -178,8 +178,7 @@
 
   <script>
     // ==========================================
-    const LIFF_ID = "2009256913-60X6COKd"; 
-    // TODO: ใส่ URL ของ Google Apps Script อันใหม่ หลังจาก Deploy สิทธิ์เป็น 'ทุกคน (Anyone)'
+    const LIFF_ID = "2009256913-60X6COKd";
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwaduenDoCUDDSnY0LqISiOOdqjZKrxdP1_6GwRTvn-69flLDYsg4v0rhHJHndFuui4/exec";
     // ==========================================
 
@@ -187,31 +186,54 @@
     let currentDisplayName = "";
     let currentPictureUrl = "";
 
-    window.onload = function() {
-      // ตรวจสอบ LIFF
-      liff.init({ liffId: LIFF_ID }).then(() => {
-        if (liff.isLoggedIn()) {
-          // ถ้าล็อกอิน LINE อยู่ (เช่นเปิดผ่านแอป LINE)
-          document.getElementById('status-text').innerText = "กำลังตรวจสอบบัญชี LINE...";
-          liff.getProfile().then(profile => {
-            currentUserLineId = profile.userId;
-            currentDisplayName = profile.displayName || "";
-            currentPictureUrl = profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            
-            checkLineIdWithAPI(currentUserLineId); 
-          }).catch(err => showError("ไม่สามารถดึงข้อมูลโปรไฟล์ได้", err.message));
-        } else {
-          // ถ้าเปิดในคอม (ไม่ล็อกอิน LINE) โชว์ฟอร์มล็อกอิน PC
-          document.getElementById('loading-container').style.display = 'none';
-          document.getElementById('login-container').style.display = 'block';
-          document.getElementById('backToLoginLink').style.display = 'inline-block'; // เปิดปุ่มกลับไปหน้า Login
+    function isMobileDevice() {
+      const ua = navigator.userAgent || "";
+      const uaMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+      const os = (window.liff && liff.getOS) ? liff.getOS() : "web";
+      return (os === "ios" || os === "android" || uaMobile);
+    }
+
+    function showLoginPC() {
+      document.getElementById('loading-container').style.display = 'none';
+      document.getElementById('form-container').style.display = 'none';
+      document.getElementById('login-container').style.display = 'block';
+      document.getElementById('backToLoginLink').style.display = 'inline-block';
+    }
+
+    window.onload = async function() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        // ✅ 1) เปิดจากคอม -> ไปหน้า Login
+        if (!isMobileDevice()) {
+          showLoginPC();
+          return;
         }
-      }).catch(err => {
-        // ถ้าระบบ LIFF พัง ก็ให้เปิดฟอร์ม Login PC เป็นค่าเริ่มต้น
-        document.getElementById('loading-container').style.display = 'none';
-        document.getElementById('login-container').style.display = 'block';
-        document.getElementById('backToLoginLink').style.display = 'inline-block';
-      });
+
+        // ✅ 2) เปิดจากมือถือ -> ต้อง login LINE ก่อนเสมอ
+        if (!liff.isLoggedIn()) {
+          liff.login(); // redirect ไป LINE login แล้วกลับมาหน้าเดิม
+          return;
+        }
+
+        // ✅ 3) มือถือ + login แล้ว -> ดึง profile -> ตรวจ lineId ในชีท
+        document.getElementById('status-text').innerText = "กำลังตรวจสอบบัญชี LINE...";
+
+        const profile = await liff.getProfile();
+        currentUserLineId = profile.userId;
+        currentDisplayName = profile.displayName || "";
+        currentPictureUrl = profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+        checkLineIdWithAPI(currentUserLineId);
+
+      } catch (err) {
+        // ถ้า LIFF พัง: คอมก็ login ได้ / มือถือให้โชว์ error ชัดๆ
+        if (!isMobileDevice()) {
+          showLoginPC();
+        } else {
+          showError("เกิดข้อผิดพลาดในการเชื่อมต่อ LINE", (err && err.message) ? err.message : String(err));
+        }
+      }
     };
 
     // สลับหน้าจอ Login กับ Register
@@ -227,26 +249,26 @@
       }
     }
 
-    // 1. เช็ค LINE ID (กรณีกดจากมือถือ)
+    // 1) เช็ค LINE ID (มือถือ)
     function checkLineIdWithAPI(lineId) {
-      fetch(`${GAS_API_URL}?lineId=${lineId}&nocache=${new Date().getTime()}`)
+      fetch(`${GAS_API_URL}?lineId=${encodeURIComponent(lineId)}&nocache=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
           if (data.isRegistered) {
             document.getElementById('status-text').innerText = "เข้าสู่ระบบอัตโนมัติ...";
             window.location.replace(data.redirectUrl);
           } else {
-            // ไม่พบข้อมูลในระบบ โชว์หน้าสมัคร พร้อมรูปโปรไฟล์
+            // ไม่พบข้อมูล -> โชว์หน้าสมัคร พร้อมรูปโปรไฟล์
             document.getElementById('loading-container').style.display = 'none';
             document.getElementById('form-container').style.display = 'block';
             document.getElementById('profileBox').style.display = 'block';
             document.getElementById('profileImage').src = currentPictureUrl;
-            document.getElementById('mainCard').style.marginTop = '60px'; // ดันการ์ดลงรับรูป
+            document.getElementById('mainCard').style.marginTop = '60px';
           }
-        }).catch(err => showError("เซิร์ฟเวอร์ขัดข้อง", err.message));
+        }).catch(err => showError("เซิร์ฟเวอร์ขัดข้อง", err.message || String(err)));
     }
 
-    // 2. ฟังก์ชันเข้าสู่ระบบผ่าน PC
+    // 2) Login PC
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
@@ -258,7 +280,6 @@
         password: document.getElementById('loginPass').value
       };
 
-      // ✨✨✨ แก้ไข: ใช้ URLSearchParams แทน JSON เพื่อหลบเลี่ยง CORS 100% ✨✨✨
       fetch(GAS_API_URL, {
         method: 'POST',
         body: new URLSearchParams(payload)
@@ -269,18 +290,19 @@
           btn.disabled = false; btn.innerText = "เข้าสู่ระบบ";
           document.getElementById('login-error').innerText = data.error;
         }
-      }).catch(err => {
+      }).catch(() => {
         btn.disabled = false; btn.innerText = "เข้าสู่ระบบ";
-        document.getElementById('login-error').innerText = "เซิร์ฟเวอร์ปฏิเสธการเชื่อมต่อ (กรุณาเช็คสิทธิ์การ Deploy เป็น 'ทุกคน')";
+        document.getElementById('login-error').innerText =
+          "เซิร์ฟเวอร์ปฏิเสธการเชื่อมต่อ (กรุณาเช็คสิทธิ์การ Deploy เป็น 'ทุกคน')";
       });
     });
 
-    // 3. ฟังก์ชันลงทะเบียน
+    // 3) Register
     document.getElementById('regForm').addEventListener('submit', function(e) {
-      e.preventDefault(); 
+      e.preventDefault();
       const btn = document.getElementById('submitBtn');
       btn.disabled = true; btn.innerText = "กำลังบันทึกข้อมูล...";
-      
+
       const rawPhone = document.getElementById('phone').value;
       const cleanPhone = rawPhone.replace(/\D/g, '');
 
@@ -296,7 +318,6 @@
         phone: cleanPhone
       };
 
-      // ✨✨✨ แก้ไข: ใช้ URLSearchParams แทน JSON เพื่อหลบเลี่ยง CORS 100% ✨✨✨
       fetch(GAS_API_URL, {
         method: 'POST',
         body: new URLSearchParams(payload)
@@ -308,9 +329,10 @@
           btn.disabled = false; btn.innerText = "ลงทะเบียนและเข้าสู่ระบบ";
           document.getElementById('form-error').innerText = data.error;
         }
-      }).catch(err => {
+      }).catch(() => {
         btn.disabled = false; btn.innerText = "ลงทะเบียนและเข้าสู่ระบบ";
-        document.getElementById('form-error').innerText = "เซิร์ฟเวอร์ปฏิเสธการเชื่อมต่อ (กรุณาเช็คสิทธิ์การ Deploy เป็น 'ทุกคน')";
+        document.getElementById('form-error').innerText =
+          "เซิร์ฟเวอร์ปฏิเสธการเชื่อมต่อ (กรุณาเช็คสิทธิ์การ Deploy เป็น 'ทุกคน')";
       });
     });
 
