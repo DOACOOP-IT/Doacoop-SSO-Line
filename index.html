@@ -179,8 +179,9 @@
   <script>
     // ==========================================
     const LIFF_ID = "2009256913-60X6COKd"; 
-    // TODO: ใส่ URL ของ Google Apps Script อันใหม่ หลังจาก Deploy สิทธิ์เป็น 'ทุกคน (Anyone)'
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwaduenDoCUDDSnY0LqISiOOdqjZKrxdP1_6GwRTvn-69flLDYsg4v0rhHJHndFuui4/exec";
+    
+    // สำคัญ: อย่าลืม Deploy แบบ "ทุกคน (Anyone)" แล้วนำ Web App URL ล่าสุดมาใส่ที่นี่
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyIqZB7yqtCO8j6DR41dU9c_cbod2MDO7uE7Nkm-4wHkcJ82wRrANR_UCCgVa-4DVxO/exec";
     // ==========================================
 
     let currentUserLineId = "";
@@ -204,7 +205,7 @@
           // ถ้าเปิดในคอม (ไม่ล็อกอิน LINE) โชว์ฟอร์มล็อกอิน PC
           document.getElementById('loading-container').style.display = 'none';
           document.getElementById('login-container').style.display = 'block';
-          document.getElementById('backToLoginLink').style.display = 'inline-block'; // เปิดปุ่มกลับไปหน้า Login
+          document.getElementById('backToLoginLink').style.display = 'inline-block'; 
         }
       }).catch(err => {
         // ถ้าระบบ LIFF พัง ก็ให้เปิดฟอร์ม Login PC เป็นค่าเริ่มต้น
@@ -241,7 +242,7 @@
             document.getElementById('form-container').style.display = 'block';
             document.getElementById('profileBox').style.display = 'block';
             document.getElementById('profileImage').src = currentPictureUrl;
-            document.getElementById('mainCard').style.marginTop = '60px'; // ดันการ์ดลงรับรูป
+            document.getElementById('mainCard').style.marginTop = '60px'; 
           }
         }).catch(err => showError("เซิร์ฟเวอร์ขัดข้อง", err.message));
     }
@@ -258,7 +259,7 @@
         password: document.getElementById('loginPass').value
       };
 
-      // ✨✨✨ แก้ไข: ใช้ URLSearchParams แทน JSON เพื่อหลบเลี่ยง CORS 100% ✨✨✨
+      // ✨✨✨ ใช้ URLSearchParams แทน JSON เพื่อหลบเลี่ยง CORS 100% ✨✨✨
       fetch(GAS_API_URL, {
         method: 'POST',
         body: new URLSearchParams(payload)
@@ -296,7 +297,7 @@
         phone: cleanPhone
       };
 
-      // ✨✨✨ แก้ไข: ใช้ URLSearchParams แทน JSON เพื่อหลบเลี่ยง CORS 100% ✨✨✨
+      // ✨✨✨ ใช้ URLSearchParams แทน JSON เพื่อหลบเลี่ยง CORS 100% ✨✨✨
       fetch(GAS_API_URL, {
         method: 'POST',
         body: new URLSearchParams(payload)
